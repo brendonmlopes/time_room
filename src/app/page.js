@@ -1,95 +1,89 @@
-import Image from "next/image";
+"use client"
+
 import styles from "./page.module.css";
+import { useEffect } from 'react';
+import { useRef } from 'react';
+import * as t from "three";
 
 export default function Home() {
-  return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.js</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+	const mountRef = useRef(null);
+	useEffect(()=>{
+		const scene = new t.Scene();
+		const camera = new t.PerspectiveCamera(75,mountRef.current.clientWidth/mountRef.current.clientHeight,0.1,1000);
+		const renderer = new t.WebGLRenderer();
+		renderer.setSize(mountRef.current.clientWidth,mountRef.current.clientHeight)
+		mountRef.current.appendChild(renderer.domElement)
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+		const wallWidth = 100
+		const wallHeight = 40
+		const wallThickness = 1
+
+		const wall1 = new t.Mesh(
+			new t.BoxGeometry(wallThickness,wallHeight,wallWidth),
+			new t.MeshStandardMaterial({color:0xff0000}),
+		)
+		const wall2 = new t.Mesh(
+			new t.BoxGeometry(wallWidth,wallThickness,wallWidth),
+			new t.MeshStandardMaterial({color:0x00ff00}),
+		)
+		const wall3 = new t.Mesh(
+			new t.BoxGeometry(wallWidth,wallHeight,wallThickness),
+			new t.MeshStandardMaterial({color:0x0000ff}),
+		)
+		const wall4 = new t.Mesh(
+			new t.BoxGeometry(wallThickness,wallHeight,wallWidth),
+			new t.MeshStandardMaterial({color:0xff00ff}),
+		)
+
+		const lightbulb = new t.Mesh(new t.SphereGeometry(3,100,100),new t.MeshStandardMaterial({color:0xffffff,alpha:0.5}))
+		lightbulb.position.set(10,10,10)
+
+		const light = new t.PointLight( 0xffffff ,1000);
+		const sunlight = new t.PointLight( 0xffffff ,1000);
+		light.position.set(10,100,10)
+		sunlight.position.set(10,10,10)
+
+		wall1.position.set(wallWidth/2,0,0)
+		wall2.position.set(0,-wallHeight/2,0)
+		wall3.position.set(0,0,-wallWidth/2)
+		wall4.position.set(-wallWidth/2,0,0)
+
+		camera.position.z = 70
+		camera.position.x = -10
+
+
+		scene.add( wall1 )
+		scene.add( wall2 )
+		scene.add( wall3 )
+		scene.add( wall4 )
+		scene.add( light );
+		scene.add( sunlight );
+		scene.add( lightbulb );
+
+		let x=0;
+		const pressed = new Set();
+		const onKeyDown = (e) => pressed.add(e.key.toLowerCase());
+		const onKeyUp = (e) => pressed.delete(e.key.toLowerCase());
+		window.addEventListener("keydown", onKeyDown);
+		window.addEventListener("keyup", onKeyUp);
+
+		function animate(){
+			requestAnimationFrame(animate);
+
+			renderer.render(scene,camera);
+			if (pressed.has("w")) camera.position.z -= 0.1;
+			if (pressed.has("s")) camera.position.z += 0.1;
+			if (pressed.has("a")) camera.position.x -= 0.1;
+			if (pressed.has("d")) camera.position.x += 0.1;
+		}
+		animate();
+		return ()=>{
+			mountRef.current.removeChild(renderer.domElement);
+		}
+
+	},[])
+
+	return (
+		<div ref={mountRef} style={{ width:"100vw", height:"100vh" }} />
+	);
 }
