@@ -4,6 +4,13 @@ import styles from "./page.module.css";
 import { useEffect } from 'react';
 import { useRef } from 'react';
 import * as t from "three";
+import Entity from './npc/Entity.js';
+
+const walkSpeed = 2
+const enemyRadius = 10
+const wallWidth = 500
+const wallHeight = 400
+const wallThickness = 1
 
 export default function Home() {
 	const mountRef = useRef(null);
@@ -14,9 +21,6 @@ export default function Home() {
 		renderer.setSize(mountRef.current.clientWidth,mountRef.current.clientHeight)
 		mountRef.current.appendChild(renderer.domElement)
 
-		const wallWidth = 100
-		const wallHeight = 40
-		const wallThickness = 1
 
 		const wall1 = new t.Mesh(
 			new t.BoxGeometry(wallThickness,wallHeight,wallWidth),
@@ -35,46 +39,74 @@ export default function Home() {
 			new t.MeshStandardMaterial({color:0xff00ff}),
 		)
 
-		const lightbulb = new t.Mesh(new t.SphereGeometry(3,100,100),new t.MeshStandardMaterial({color:0xffffff,alpha:0.5}))
-		lightbulb.position.set(10,10,10)
-
-		const light = new t.PointLight( 0xffffff ,1000);
-		const sunlight = new t.PointLight( 0xffffff ,1000);
-		light.position.set(10,100,10)
-		sunlight.position.set(10,10,10)
-
 		wall1.position.set(wallWidth/2,0,0)
 		wall2.position.set(0,-wallHeight/2,0)
 		wall3.position.set(0,0,-wallWidth/2)
 		wall4.position.set(-wallWidth/2,0,0)
-
-		camera.position.z = 70
-		camera.position.x = -10
-
-
 		scene.add( wall1 )
 		scene.add( wall2 )
 		scene.add( wall3 )
 		scene.add( wall4 )
+
+		const light = new t.PointLight( 0xffffff ,1000);
+		light.position.set(0,0,0)
+
+		const sunlight = new t.PointLight( 0xffffff ,10);
+		sunlight.position.set(10,100,10)
+
+		//Making enemies
+		const enemyMesh = new t.Mesh(
+			new t.SphereGeometry(enemyRadius,10,10),
+			new t.MeshStandardMaterial({color:0xff0000})
+		)
+		const v = new Entity( enemyMesh , new t.Vector3(0,0,0))
+		enemyMesh.position.set(0,10,0)
+
+		let player = new Entity(camera,new t.Vector3(0,0,-1))
+
 		scene.add( light );
 		scene.add( sunlight );
-		scene.add( lightbulb );
+		scene.add( enemyMesh );
 
-		let x=0;
 		const pressed = new Set();
 		const onKeyDown = (e) => pressed.add(e.key.toLowerCase());
 		const onKeyUp = (e) => pressed.delete(e.key.toLowerCase());
 		window.addEventListener("keydown", onKeyDown);
 		window.addEventListener("keyup", onKeyUp);
 
+		camera.position.x = -10
+		camera.position.y = -wallHeight/2+30
+		camera.position.z = 70
+
+
 		function animate(){
 			requestAnimationFrame(animate);
-
 			renderer.render(scene,camera);
-			if (pressed.has("w")) camera.position.z -= 0.1;
-			if (pressed.has("s")) camera.position.z += 0.1;
-			if (pressed.has("a")) camera.position.x -= 0.1;
-			if (pressed.has("d")) camera.position.x += 0.1;
+
+			light.position.x = player.mesh.position.x
+			light.position.y = player.mesh.position.y
+			light.position.z = player.mesh.position.z
+
+			if(v.mesh.position.y <= enemyRadius-(wallHeight/2)){
+				v.mesh.position.y += v.speed
+				v.mesh.position.y = enemyRadius - wallHeight/2 + 0.000000001
+				v.speed *= -0.9*v.speed
+			}else{
+				v.mesh.position.y -= v.speed
+				v.speed+=0.01
+			}
+			v.mesh.lookAt(camera.position)
+
+			if (pressed.has("w")) {player.walk(1)};
+			if (pressed.has("s")) {player.walk(-1)}
+			if (pressed.has("a")) {
+				player.rotate(walkSpeed/20)
+				camera.rotation.y += walkSpeed/20
+			}
+			if (pressed.has("d")) {
+				player.rotate(-walkSpeed/20)
+				camera.rotation.y -= walkSpeed/20
+			}
 		}
 		animate();
 		return ()=>{
