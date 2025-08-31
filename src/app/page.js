@@ -9,7 +9,7 @@ import Entity from './npc/Entity.js';
 const walkSpeed = 2
 const enemyRadius = 10
 const wallWidth = 500
-const wallHeight = 400
+const wallHeight = 200
 const wallThickness = 1
 
 export default function Home() {
@@ -48,7 +48,7 @@ export default function Home() {
 		scene.add( wall3 )
 		scene.add( wall4 )
 
-		const light = new t.PointLight( 0xffffff ,1000);
+		const light = new t.PointLight( 0xffffff ,10000);
 		light.position.set(0,0,0)
 
 		const sunlight = new t.PointLight( 0xffffff ,10);
@@ -59,7 +59,7 @@ export default function Home() {
 			new t.SphereGeometry(enemyRadius,10,10),
 			new t.MeshStandardMaterial({color:0xff0000})
 		)
-		const v = new Entity( enemyMesh , new t.Vector3(0,0,0))
+		const e = new Entity( enemyMesh , new t.Vector3(1,0,0))
 		enemyMesh.position.set(0,10,0)
 
 		let player = new Entity(camera,new t.Vector3(0,0,-1))
@@ -87,18 +87,26 @@ export default function Home() {
 			light.position.y = player.mesh.position.y
 			light.position.z = player.mesh.position.z
 
-			if(v.mesh.position.y <= enemyRadius-(wallHeight/2)){
-				v.mesh.position.y += v.speed
-				v.mesh.position.y = enemyRadius - wallHeight/2 + 0.000000001
-				v.speed *= -0.9*v.speed
-			}else{
-				v.mesh.position.y -= v.speed
-				v.speed+=0.01
+			e.speed = 1/e.mesh.position.distanceTo(camera.position)
+			for(let i = 0 ; i < 1000 ; i++){
+				if(e.mesh.position.y <= enemyRadius-(wallHeight/2)){
+					e.mesh.position.y = enemyRadius - wallHeight/2 
+					e.mesh.position.y += e.speed
+					e.speed *= -0.9999*e.speed
+				}else{
+					e.mesh.position.y -= e.speed
+					e.speed+=0.00000001
+				}
 			}
-			v.mesh.lookAt(camera.position)
+			if(e.mesh.position.x <= wallWidth/2 && e.mesh.position.x >=-wallWidth/2){
+				e.walk(1)
+			}
 
-			if (pressed.has("w")) {player.walk(1)};
-			if (pressed.has("s")) {player.walk(-1)}
+			e.mesh.lookAt(camera.position)
+
+			if (pressed.has(" ")) {player.jump(1)}
+			if (pressed.has("w")) {player.walk(player.speed)};
+			if (pressed.has("s")) {player.walk(-player.speed)}
 			if (pressed.has("a")) {
 				player.rotate(walkSpeed/20)
 				camera.rotation.y += walkSpeed/20
